@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 
 from db import engine
-from backend.models.model import Category
+from models.model import Category
 
 
 DEFAULT_CATEGORIES = [

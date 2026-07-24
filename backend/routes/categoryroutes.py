@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlmodel import Session, select
 from db import get_session
-from backend.models.model import Category, User           # import User model
-from backend.schemas.schema import CategoryCreate
+from models.model import Category, User           # import User model
+from schemas.schema import CategoryCreate
 from security import get_current_user
 
 router = APIRouter(

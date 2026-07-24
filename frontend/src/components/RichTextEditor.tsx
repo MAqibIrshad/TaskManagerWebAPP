@@ -18,8 +18,8 @@ export default function RichTextEditor({ content, onChange }: { content: string;
   })
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50">
-      <EditorContent editor={editor} />
+    <div className="rounded-xl border border-slate-200 bg-slate-50 ">
+      <EditorContent editor={editor}/>
     </div>
   )
 }

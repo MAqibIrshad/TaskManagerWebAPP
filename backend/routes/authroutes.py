@@ -1,12 +1,12 @@
 # auth_routes.py
 
-from backend.schemas.schema import Token, UserLogin
+from schemas.schema import Token, UserLogin
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 
 from db import get_session
-from backend.models.model import User
-from backend.schemas.schema import UserCreate, UserResponse
+from models.model import User
+from schemas.schema import UserCreate, UserResponse
 from security import create_access_token, hash_password, verify_password
 
 router = APIRouter(

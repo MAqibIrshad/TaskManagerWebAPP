@@ -81,37 +81,83 @@ export async function deleteTask(id: number) {
 export async function createTask(
   title: string,
   description: string,
-  category_id: number
+  category_id: number,
+  milestone?: string,
+  tags?: string[]
 ) {
   const response = await api.post("/tasks/", {
     title,
     description,
     category_id,
+    milestone,
+    tags,
   })
 
   return response.data
 }
+export async function generateDescription(title: string) {
+  const token = localStorage.getItem("token")
 
+  const response = await api.post(
+    "/tasks/generate-description",
+    { title },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
 
-
+  return response.data
+}
 export async function getTask(id: number) {
   const response = await api.get(`/tasks/${id}`)
   return response.data
 }
+export async function downloadTaskPdf(id: number) {
+  const response = await api.get(
+    `/tasks/${id}/pdf`,
+    {
+      responseType: "blob",
+    }
+  )
 
+  const blob = new Blob([response.data], {
+    type: "application/pdf",
+  })
+
+  const url = window.URL.createObjectURL(blob)
+
+  const link = document.createElement("a")
+  link.href = url
+  link.download = `task_${id}_report.pdf`
+
+  document.body.appendChild(link)
+  link.click()
+
+  link.remove()
+
+  window.URL.revokeObjectURL(url)
+}
 export async function updateTask(
   id: number,
   title: string,
   description:string,
-  completed: boolean
+  completed: boolean,
+  milestone:string,
+  tags:string[]
 ) {
   const response = await api.put(`/tasks/${id}`, {
     title,
     description,
     completed,
+    milestone,
+    tags
   })
 
   return response.data
+
+
 }export async function toggleTask(
   id: number,
   completed: boolean
@@ -143,9 +189,13 @@ export async function getDashboardStats() {
   const response = await api.get("/tasks/dashboard/stats")
   return response.data
 }
+export interface WeeklyTask {
+  day: string
+  completed: number
+}
 
-export async function getWeeklyTasks() {
-  const response = await api.get("/tasks/dashboard/weekly")
+export async function getWeeklyTasks(): Promise<WeeklyTask[]> {
+  const response = await api.get<WeeklyTask[]>("/tasks/dashboard/weekly")
   return response.data
 }
 

@@ -182,7 +182,7 @@ export default function TaskForm({ addTask, isSubmitting }: TaskFormProps) {
           id="title"
           type="text"
           placeholder="e.g. Finish React project"
-          className={`w-full rounded-xl border bg-slate-50 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 ${
+          className={`overflow-wrap-anywhere w-full rounded-xl border bg-slate-50 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 ${
             errors.title
               ? "border-red-400 focus:ring-red-200"
               : "border-slate-200 focus:border-indigo-400 focus:ring-indigo-200"
@@ -246,7 +246,7 @@ export default function TaskForm({ addTask, isSubmitting }: TaskFormProps) {
             name="description"
             control={control}
             render={({ field }) => (
-              <EditorContent editor={editor} />
+              <EditorContent  editor={editor} />
             )}
           />
         </div>

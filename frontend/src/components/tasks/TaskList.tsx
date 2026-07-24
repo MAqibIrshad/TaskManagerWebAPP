@@ -116,18 +116,16 @@ function handleDragEnd(event: DragEndEvent) {
       strategy={verticalListSortingStrategy}
       
     >
-    <div className="space-y-4">
-      {tasks.map((task) => (
-        <TaskCard
-          key={task.id}
-          task={task}
-          onToggle={onToggle}
-        //   onUpdate={onUpdate}
-          onDelete={onDelete}
-        />
-      ))}
-    </div>
-    </SortableContext>
+    <div className="grid grid-cols-3 gap-4">
+  {tasks.map((task) => (
+    <TaskCard
+      key={task.id}
+      task={task}
+      onToggle={onToggle}
+      onDelete={onDelete}
+    />
+  ))}
+</div>    </SortableContext>
     </DndContext>
   )
 }

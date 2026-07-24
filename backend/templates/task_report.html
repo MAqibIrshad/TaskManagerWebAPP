@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+
+<title>Task Report</title>
+
+<style>
+
+@page {
+    size: A4;
+    margin: 40px;
+}
+
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    color: #1e293b;
+    background: white;
+}
+
+
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+
+.header h1 {
+    font-size: 28px;
+    margin-bottom: 5px;
+}
+
+
+.header p {
+    color: #64748b;
+    font-size: 14px;
+}
+
+
+/* Summary card */
+
+.summary {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+
+.card {
+    flex: 1;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 18px;
+    border: 1px solid #e2e8f0;
+}
+
+
+.card-title {
+    color: #64748b;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+
+.card-value {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+
+/* Sections */
+
+.section {
+    margin-top: 25px;
+}
+
+
+.section-title {
+
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+
+}
+
+
+/* Description */
+
+.description {
+
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 10px;
+    line-height: 1.6;
+
+}
+
+
+
+/* Status */
+
+.status {
+
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: bold;
+
+}
+
+
+.completed {
+
+    background: #dcfce7;
+    color: #15803d;
+
+}
+
+
+.pending {
+
+    background: #ffedd5;
+    color: #c2410c;
+
+}
+
+
+
+/* Tags */
+
+.tags {
+
+    margin-top:10px;
+
+}
+
+
+.tag {
+
+    display:inline-block;
+    background:#e0e7ff;
+    color:#4338ca;
+    padding:6px 12px;
+    border-radius:999px;
+    margin-right:6px;
+    margin-bottom:6px;
+    font-size:12px;
+
+}
+
+
+
+/* Milestone */
+
+.milestone {
+
+    background:#f1f5f9;
+    padding:15px;
+    border-radius:10px;
+    line-height:1.6;
+
+}
+
+
+
+.footer {
+
+    margin-top:40px;
+    text-align:center;
+    color:#94a3b8;
+    font-size:12px;
+
+}
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="header">
+
+<h1>
+Task Completion Report
+</h1>
+
+<p>
+Generated on {{ generated_date }}
+</p>
+
+</div>
+
+
+
+<div class="summary">
+
+
+<div class="card">
+
+<div class="card-title">
+Task ID
+</div>
+
+<div class="card-value">
+#{{ task.id }}
+</div>
+
+</div>
+
+
+
+<div class="card">
+
+<div class="card-title">
+Status
+</div>
+
+<div class="card-value">
+
+{% if task.completed %}
+
+<span class="status completed">
+Completed
+</span>
+
+{% else %}
+
+<span class="status pending">
+Pending
+</span>
+
+{% endif %}
+
+</div>
+
+</div>
+
+
+
+</div>
+
+
+
+<div class="section">
+
+<div class="section-title">
+Task Title
+</div>
+
+<h2>
+{{ task.title }}
+</h2>
+
+</div>
+
+
+
+
+<div class="section">
+
+<div class="section-title">
+Description
+</div>
+
+
+<div class="description">
+
+{{ task.description | safe }}
+
+</div>
+
+
+</div>
+
+
+
+
+
+<div class="section">
+
+<div class="section-title">
+Milestone Achieved
+</div>
+
+
+<div class="milestone">
+
+{{ task.milestone }}
+
+</div>
+
+
+</div>
+
+
+
+
+
+<div class="section">
+
+<div class="section-title">
+Technologies / Tags
+</div>
+
+
+<div class="tags">
+
+{% for tag in task.tags %}
+
+<span class="tag">
+#{{ tag }}
+</span>
+
+{% endfor %}
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+<div class="footer">
+
+Task Manager Report • Generated automatically
+
+</div>
+
+
+</body>
+
+</html>

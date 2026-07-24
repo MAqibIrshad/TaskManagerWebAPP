@@ -1,13 +1,14 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
 from utils import sanitize_html
 from security import get_current_user
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
-
+from fastapi.responses import Response, FileResponse
 from db import get_session
-from backend.models.model import Task, User
-from backend.schemas.schema import (
+from models.model import Task, User
+from schemas.schema import (
     DashboardResponse,
     DashboardStatsResponse,
     DashboardTaskResponse,
@@ -118,7 +119,14 @@ def get_task(
     task = session.get(Task, task_id)
     if not task or task.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Task not found")
-    return task
+
+    response = TaskResponse.model_validate(task)
+
+    response.report_generated = Path(
+        f"generated_reports/task_{task.id}_report.pdf"
+    ).exists()
+    return response
+
 # @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 # def create_task(
 #     task: TaskCreate,
@@ -172,6 +180,14 @@ def create_task(
             strip=True,
         )
 
+      # Sanitize milestone
+    if task_data.get("milestone"):
+        task_data["milestone"] = bleach_clean(
+            task_data["milestone"],
+            tags=[],
+            strip=True,
+        )
+
     # Calculate position
     max_position = session.exec(
         select(func.max(Task.position)).where(Task.user_id == current_user.id)
@@ -185,6 +201,15 @@ def create_task(
     session.commit()
     session.refresh(new_task)
     return new_task
+
+from jinja2 import Environment, FileSystemLoader
+from weasyprint import HTML
+
+# Load HTML templates
+env = Environment(
+    loader=FileSystemLoader("templates")
+)
+
 @router.put("/reorder")
 def reorder_tasks(
     data: ReorderTasks,
@@ -250,14 +275,93 @@ def update_task(
             strip=True,
         )
 
+    
+    # Sanitize milestone
+    if update_data.get("milestone"):
+        update_data["milestone"] = bleach_clean(
+            update_data["milestone"],
+            tags=[],
+            strip=True,
+        )
+
+    # for key, value in update_data.items():
+        # setattr(task, key, value)
+    
+    was_completed = task.completed
+
+    update_data = task_update.model_dump(exclude_unset=True)
+
     for key, value in update_data.items():
         setattr(task, key, value)
+
+    if "completed" in update_data:
+        if not was_completed and task.completed:
+            task.completed_at = datetime.utcnow()
+
+        elif was_completed and not task.completed:
+            task.completed_at = None
 
     session.add(task)
     session.commit()
     session.refresh(task)
+
+    generate_task_report(task.id, session=session)
     return task
 
+from pathlib import Path
+
+PDF_DIR = Path("generated_reports")
+PDF_DIR.mkdir(exist_ok=True)
+
+@router.get("/{task_id}/pdf")
+def generate_task_report(
+    task_id: int,
+    session: Session = Depends(get_session)
+):
+
+    # Fetch task
+    task = session.exec(
+        select(Task)
+        .where(Task.id == task_id)
+    ).first()
+
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found"
+        )
+
+
+    # Render HTML template
+    template = env.get_template(
+        "task_report.html"
+    )
+
+
+    html_content = template.render(
+        task=task,
+        generated_date=datetime.now()
+        .strftime("%d %B %Y")
+    )
+
+
+    # Convert HTML to PDF
+    pdf_file = HTML(
+        string=html_content
+    ).write_pdf()
+
+    file_path = PDF_DIR / f"task_{task.id}_report.pdf"
+
+    with open(file_path, "wb") as f:
+        f.write(pdf_file)
+
+    return FileResponse(
+        path=file_path,
+        media_type="application/pdf",
+        filename=f"task_{task.id}_report.pdf",
+    )
+    
 @router.delete(
     "/{task_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -290,19 +394,46 @@ def get_dashboard_stats(
     )
 @router.get("/dashboard/weekly")
 def get_weekly_tasks(
+    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    # When you make this dynamic, filter by current_user.id
-    return [
-        {"day": "Mon", "completed": 3},
-        {"day": "Tue", "completed": 5},
-        {"day": "Wed", "completed": 2},
-        {"day": "Thu", "completed": 7},
-        {"day": "Fri", "completed": 4},
-        {"day": "Sat", "completed": 6},
-        {"day": "Sun", "completed": 1},
+    today = datetime.utcnow()
+
+    # Monday of the current week
+    start_of_week = today - timedelta(days=today.weekday())
+    start_of_week = start_of_week.replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
+    end_of_week = start_of_week + timedelta(days=7)
+
+    tasks = session.exec(
+        select(Task).where(
+            Task.user_id == current_user.id,
+            Task.completed == True,
+            Task.completed_at >= start_of_week,
+            Task.completed_at < end_of_week,
+        )
+    ).all()
+
+    weekly = [
+        {"day": "Mon", "completed": 0},
+        {"day": "Tue", "completed": 0},
+        {"day": "Wed", "completed": 0},
+        {"day": "Thu", "completed": 0},
+        {"day": "Fri", "completed": 0},
+        {"day": "Sat", "completed": 0},
+        {"day": "Sun", "completed": 0},
     ]
 
+    for task in tasks:
+        index = task.completed_at.weekday()  # Monday = 0
+        weekly[index]["completed"] += 1
+
+    return weekly
 @router.get("/dashboard/active", response_model=DashboardTaskResponse)
 def get_active_tasks(
     skip: int = Query(0, ge=0),
@@ -378,3 +509,25 @@ def upload_resource(
     session.refresh(task)
 
     return task
+from ai.chain import description_chain
+from schemas.schema import (
+    GenerateDescriptionRequest,
+    GenerateDescriptionResponse,
+)
+
+@router.post(
+    "/generate-description",
+    response_model=GenerateDescriptionResponse,
+)
+def generate_description(
+    request: GenerateDescriptionRequest,
+):
+    description = description_chain.invoke(
+        {
+            "title": request.title,
+        }
+    )
+
+    return GenerateDescriptionResponse(
+        description=description,
+    )

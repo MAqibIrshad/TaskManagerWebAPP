@@ -2,7 +2,7 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, UTC
 from jose import jwt
 from db import get_session
-from backend.models.model import User
+from models.model import User
 from fastapi.security import OAuth2PasswordBearer
 # from dependencies import oauth2_scheme
 from fastapi import Depends, HTTPException, status

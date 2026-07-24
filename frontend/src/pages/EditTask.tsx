@@ -213,7 +213,7 @@ import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getTask, updateTask } from "@/api/api";   // updateTask now accepts (id, title, completed, description)
+import { generateDescription, getTask, updateTask } from "@/api/api";   // updateTask now accepts (id, title, completed, description)
 import queryClient from "@/api/queryClient";
 import axios from "axios";
 import { toast } from "sonner";
@@ -281,15 +281,34 @@ export default function EditTask() {
       editor.commands.setContent(task.description || "");
     }
   }, [task, editor, reset]);
+const generateMutation = useMutation({
+  mutationFn: () =>
+    generateDescription(
+      watch("title")
+    ),
 
+  onSuccess: (data) => {
+    editor?.commands.setContent(data.description)
+    setValue("description", data.description)
+  // Update TipTap editor
+    // editor?.commands.setContent(data.description);
+
+
+    toast.success("Description generated!")
+  },
+
+  onError: () => {
+    toast.error("Failed to generate description.")
+  },
+})
   const mutation = useMutation({
     mutationFn: (data: EditForm) =>
-      updateTask(Number(id), data.title, data.description, data.completed),
+      updateTask(Number(id), data.title, data.description, data.completed, "", []),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task", id] });
       toast.success("Task updated successfully!");
-      navigate("/tasks");
+      navigate("/dashboard/tasks");
     },
     onError: (error) => {
       if (axios.isAxiosError(error)) {
@@ -361,7 +380,26 @@ export default function EditTask() {
                 {...register("title", { required: true })}
               />
             </div>
-
+            <div className="flex justify-end">
+  <Button
+    type="button"
+    variant="outline"
+    onClick={() => generateMutation.mutate()}
+    disabled={
+      generateMutation.isPending || !watch("title")
+    }
+  >
+    {generateMutation.isPending ? (
+      <>
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Generating...
+      </>
+    ) : (
+      "✨ Generate Description"
+    )}
+  </Button>
+</div>
+            
             {/* Rich-text Description */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700">Description</label>

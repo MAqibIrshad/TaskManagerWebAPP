@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 import logging
 from db  import create_db_tables
 from seed import seed_categories
-from backend.routes.authroutes import router as auth_router
+from routes.authroutes import router as auth_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,8 +18,8 @@ if not app:
 else:
     logging.info("App Started!")
 
-from backend.routes.tasksroutes import router as task_router
-from backend.routes.categoryroutes import router as category_router
+from routes.tasksroutes import router as task_router
+from routes.categoryroutes import router as category_router
 app.include_router(task_router)
 app.include_router(category_router)
 app.include_router(auth_router)

@@ -1,6 +1,14 @@
+from datetime import datetime
 from typing import Optional
 from sqlmodel import SQLModel
+from pydantic import BaseModel
 
+class GenerateDescriptionRequest(BaseModel):
+    title: str
+
+
+class GenerateDescriptionResponse(BaseModel):
+    description: str
 
 class TaskCreate(SQLModel):
     title: str
@@ -8,10 +16,16 @@ class TaskCreate(SQLModel):
     description: Optional[str] = None
     category_id: Optional[int] = None
 
+    milestone: str | None = None
+    tags: list[str] | None = None
+
 class TaskUpdate(SQLModel):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
+
+    milestone: str | None = None
+    tags: list[str] | None = None
 
 class CategoryResponse(SQLModel):
     id: int
@@ -24,6 +38,11 @@ class TaskResponse(SQLModel):
     position: int
     resource_url: str | None = None
     category: CategoryResponse | None = None
+    created_at: datetime
+    completed_at: Optional[datetime]
+    milestone: str|None = None
+    tags: list[str] = []
+    report_generated: bool = False
 
     model_config = {
         "from_attributes": True
@@ -49,7 +68,7 @@ class Token(SQLModel):
 
 class ReorderTasks(SQLModel):
     task_ids: list[int]
-from pydantic import BaseModel
+
 
 class CategoryCreate(SQLModel):
     name: str

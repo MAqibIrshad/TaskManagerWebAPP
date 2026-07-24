@@ -1,6 +1,8 @@
 from typing import Optional
 from sqlmodel import SQLModel, Field, Relationship
-
+from sqlalchemy import Column, String
+from sqlalchemy.dialects.postgresql import ARRAY
+from datetime import datetime
 class Category(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     name: str
@@ -30,6 +32,23 @@ class Task(SQLModel, table=True):
 
     user: "User" = Relationship(
         back_populates="tasks"
+    )
+
+    created_at: datetime = Field(
+        default_factory=datetime.utcnow,
+        nullable=False,
+    )
+
+    completed_at: Optional[datetime] = Field(
+        default=None,
+        nullable=True,
+    )
+
+    milestone: Optional[str] = Field(default=None)
+
+    tags: Optional[list[str]] = Field(
+        default=None,
+        sa_column=Column(ARRAY(String), nullable=True)
     )
 
 class User(SQLModel, table=True):

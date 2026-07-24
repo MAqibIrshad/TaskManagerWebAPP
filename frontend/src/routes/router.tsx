@@ -15,6 +15,7 @@ import LoginPage from "@/pages/LoginPage"
 import RegisterPage from "@/pages/RegisterPage"
 import HomePage from "@/pages/HomePage"
 import ProtectedRoute from "@/components/ProtectedRoute"
+import Report from "@/pages/Report"
 
 export const router = createBrowserRouter([
    {
@@ -50,8 +51,8 @@ export const router = createBrowserRouter([
         element: <EditTask />,
       },
       {
-        path: "settings",
-        element: <Settings />,
+        path: "tasks/report",
+        element: <Report />,
       },
     ],
   },

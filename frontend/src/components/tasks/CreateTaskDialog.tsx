@@ -1,3 +1,4 @@
+import { ReactNode } from "react"
 import {
   Dialog,
   DialogContent,
@@ -5,29 +6,38 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-
 import { Button } from "@/components/ui/button"
+import { PlusCircle } from "lucide-react"
 import TaskForm from "./TaskForm"
+
 interface Props {
   addTask: (
     title: string,
-    description:string,
+    description: string,
     category_id: number
   ) => void
-
   isPending: boolean
+  /** Optional custom trigger – uses a default orange button if not provided */
+  trigger?: ReactNode
 }
 
 export default function CreateTaskDialog({
   addTask,
   isPending,
+  trigger,
 }: Props) {
   return (
-    <div className="m-3">
     <Dialog>
-      <DialogTrigger className="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-  Create Task
-</DialogTrigger>
+      <DialogTrigger>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button className="gap-2">
+            <PlusCircle className="h-4 w-4" />
+            Create Task
+          </Button>
+        )}
+      </DialogTrigger>
 
       <DialogContent>
         <DialogHeader>
@@ -40,6 +50,5 @@ export default function CreateTaskDialog({
         />
       </DialogContent>
     </Dialog>
-    </div>
   )
 }

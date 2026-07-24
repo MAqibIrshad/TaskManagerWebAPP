@@ -282,12 +282,13 @@ import {
   Italic,
   Heading2,
   Type,
+  FileText,
 } from "lucide-react"
 import { toast } from "sonner"
 import axios from "axios"
 import { useNavigate, useParams } from "react-router-dom"
 
-import { generateDescription, getTask, updateTask } from "@/api/api"
+import { downloadTaskPdf, generateDescription, getTask, updateTask } from "@/api/api"
 import queryClient from "@/api/queryClient"
 
 import {
@@ -304,17 +305,21 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 
+
 type SearchForm = {
   id: number
 }
 
 type EditForm = {
   title: string
-  description: string   // new field
-  completed: boolean
+  description: string
+  completed:boolean
+  milestone: string
+  tags: string[]
+//   completed: boolean
 }
 
-export default function TaskEdit() {
+export default function Report() {
   const { task_id } = useParams()
   const navigate = useNavigate()
   const [taskId, setTaskId] = useState<number | null>(
@@ -337,9 +342,32 @@ export default function TaskEdit() {
   } = useForm<EditForm>({
     defaultValues: {
       description: "",
+      milestone: "",
+      tags: [],
     },
   })
+const [tagInput, setTagInput] = useState("")
+const tags = watch("tags") || [];
+function addTag() {
+  const value = tagInput.trim()
 
+  if (!value) return
+  if (tags.includes(value)) return
+  if (tags.length >= 10) {
+    toast.error("Maximum 10 tags allowed")
+    return
+  }
+
+  setValue("tags", [...tags, value])
+  setTagInput("")
+}
+
+function removeTag(tag: string) {
+  setValue(
+    "tags",
+    tags.filter((t) => t !== tag)
+  )
+}
   // TipTap editor
   const editor = useEditor({
     extensions: [StarterKit],
@@ -355,6 +383,17 @@ export default function TaskEdit() {
     setTaskId(data.id)
   }
 
+const downloadMutation = useMutation({
+  mutationFn: downloadTaskPdf,
+
+  onSuccess: () => {
+    toast.success("PDF downloaded successfully")
+  },
+
+  onError: () => {
+    toast.error("Failed to download PDF")
+  },
+})
   const {
     data: task,
     isLoading,
@@ -367,16 +406,19 @@ export default function TaskEdit() {
   })
 
   // Sync fetched task to edit form AND editor
-  useEffect(() => {
-    if (task && editor) {
-      reset({
-        title: task.title,
-        description: task.description || "",
-        completed: task.completed,
-      })
-      editor.commands.setContent(task.description || "")
-    }
-  }, [task, editor, reset])
+ useEffect(() => {
+  if (task && editor) {
+    reset({
+      title: task.title,
+      description: task.description || "",
+      completed: task.completed,
+      milestone: task.milestone || "",
+      tags: task.tags || [],
+    })
+
+    editor.commands.setContent(task.description || "")
+  }
+}, [task, editor, reset])
 const generateMutation = useMutation({
   mutationFn: () =>
     generateDescription(
@@ -398,18 +440,22 @@ const generateMutation = useMutation({
   },
 })
 
-  const updateMutation = useMutation({
+  const generateReportMutation = useMutation({
     mutationFn: ({
       id,
       title,
       completed,
       description,
+      milestone,
+      tags
     }: {
       id: number
       title: string
       completed: boolean
-      description?: string     // optional
-    }) => updateTask(id, title, description || "", completed, "", []),
+      description?: string
+      milestone:string
+      tags:string[]   // optional
+    }) => updateTask(id, title, description || "", completed, milestone, tags),
 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
@@ -426,15 +472,23 @@ const generateMutation = useMutation({
     },
   })
 
-  function onSubmit(data: EditForm) {
+function onSubmit(data: EditForm) {
     if (!taskId) return
-    updateMutation.mutate({
-      id: taskId,
-      title: data.title,
-      completed: data.completed,
-      description: editor?.getHTML() || "",
-    })
-  }
+    if (data.tags.length < 5) {
+        toast.error("Please enter at least 5 tags.")
+        return
+    }
+
+  generateReportMutation.mutate({
+    id: taskId!,
+    title: data.title,
+    description: editor?.getHTML() || "",
+    milestone: data.milestone,
+    tags: data.tags,
+    completed: data.completed,
+  })
+}
+  
 
   return (
     <div className="p-8">
@@ -618,6 +672,65 @@ const generateMutation = useMutation({
                 />
               </div>
 
+              <div className="space-y-2">
+  <label className="text-sm font-medium text-slate-700">
+    Milestone Achieved
+  </label>
+
+  <textarea
+    rows={4}
+    placeholder="Describe what was achieved after completing this task..."
+    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+    {...register("milestone")}
+  />
+</div>
+
+<div className="space-y-3">
+  <label className="text-sm font-medium text-slate-700">
+    Tags (Minimum 5)
+  </label>
+
+  <div className="flex gap-2">
+    <input
+      value={tagInput}
+      onChange={(e) => setTagInput(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault()
+          addTag()
+        }
+      }}
+      placeholder="React"
+      className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+    />
+
+    <Button
+      type="button"
+      onClick={addTag}
+    >
+      Add
+    </Button>
+  </div>
+
+  <div className="flex flex-wrap gap-2">
+  {tags.map((tag) => (
+    <span
+      key={tag}
+      onClick={() => removeTag(tag)}
+      className="cursor-pointer rounded-full px-3 py-1 text-sm 
+                 bg-muted border border-border 
+                 shadow-sm hover:shadow-md 
+                 hover:bg-muted/80 transition-all"
+    >
+      #{tag} <span className="ml-1 text-muted-foreground">✕</span>
+    </span>
+  ))}
+</div>
+  <p className="text-xs text-muted-foreground">
+    {tags.length}/5 minimum tags
+  </p>
+</div>
+
               {/* Buttons */}
               <div className="flex justify-end gap-3 pt-2">
                 <Button
@@ -629,22 +742,58 @@ const generateMutation = useMutation({
                   Cancel
                 </Button>
                 <Button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="rounded-lg bg-indigo-600 hover:bg-indigo-700"
-                >
-                  {updateMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Update Task
-                    </>
-                  )}
-                </Button>
+  type="submit"
+  disabled={generateReportMutation.isPending}
+  className="rounded-lg bg-indigo-600 hover:bg-indigo-700"
+>
+  {generateReportMutation.isPending ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Generating...
+    </>
+  ) : (
+    <>
+      <FileText className="mr-2 h-4 w-4" />
+      Generate Report
+    </>
+  )}
+</Button>
+
+{/* <Button
+  onClick={() => downloadMutation.mutate(task.id)}
+  disabled={downloadMutation.isPending}
+>
+  {downloadMutation.isPending ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Downloading...
+    </>
+  ) : (
+    <>
+      <FileText className="mr-2 h-4 w-4" />
+      Download Report
+    </>
+  )}
+</Button> */}
+<Button
+  onClick={() => downloadMutation.mutate(task.id)}
+  disabled={
+    downloadMutation.isPending ||
+    !task.report_generated
+  }
+>
+  {downloadMutation.isPending ? (
+    <>
+      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      Downloading...
+    </>
+  ) : (
+    <>
+      <FileText className="mr-2 h-4 w-4" />
+      Download Report
+    </>
+  )}
+</Button>
               </div>
             </form>
           </CardContent>
