@@ -92,6 +92,7 @@ def login(
     }
     )
     return {
+    "user": db_user,
     "access_token": token,
     "token_type": "bearer",
     }

@@ -63,6 +63,7 @@ class UserLogin(SQLModel):
     email: str
     password: str
 class Token(SQLModel):
+    user: UserResponse
     access_token: str
     token_type: str
 

@@ -282,6 +282,8 @@ import {
   Italic,
   Heading2,
   Type,
+  XCircle,
+  Sparkles,
 } from "lucide-react"
 import { toast } from "sonner"
 import axios from "axios"
@@ -346,7 +348,7 @@ export default function TaskEdit() {
     content: "",         // will be set when task loads
     editorProps: {
       attributes: {
-        class: "prose prose-sm max-w-none min-h-[120px] px-4 py-3 focus:outline-none",
+        class: "prose prose-sm max-w-none min-h-[120px] px-4 py-3 focus:outline-none text-slate-600 dark:bg-slate-900 dark:text-white",
       },
     },
   })
@@ -437,219 +439,240 @@ const generateMutation = useMutation({
   }
 
   return (
-    <div className="p-8">
-      {/* Back navigation */}
-      <Button
-        variant="ghost"
-        className="mb-6 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
-        onClick={() => navigate("/dashboard/tasks")}
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Tasks
-      </Button>
+    <div className="min-h-screen bg-slate-50/50 p-8 dark:bg-slate-950">
+  {/* Back navigation */}
+  <Button
+    variant="ghost"
+    className="mb-6 text-slate-600 hover:text-slate-900 hover:bg-slate-200/50 dark:text-slate-300 dark:hover:bg-slate-800"
+    onClick={() => navigate("/dashboard/tasks")}
+  >
+    <ArrowLeft className="mr-2 h-4 w-4" />
+    Back to Tasks
+  </Button>
 
-      {/* Search card */}
-      <Card className="mx-auto max-w-2xl rounded-2xl border-0 shadow-xl mb-8">
-        <CardHeader>
-          <CardTitle className="text-xl text-slate-900">
-            Find Task to Edit
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form
-            onSubmit={searchForm.handleSubmit(handleSearch)}
-            className="flex gap-3"
+  {/* Search card */}
+  <Card className="mx-auto max-w-2xl rounded-2xl border border-border shadow-xl mb-8">
+    <CardHeader className="border-b border-border bg-gradient-to-r from-indigo-50 via-indigo-50/30 to-transparent dark:from-indigo-950/40 dark:via-indigo-950/10">
+      <CardTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
+        <Search className="h-5 w-5 text-indigo-600" />
+        Find Task to Edit
+      </CardTitle>
+      <p className="text-sm text-muted-foreground">
+        Enter a task ID to load it for editing.
+      </p>
+    </CardHeader>
+    <CardContent className="pt-6">
+      <form onSubmit={searchForm.handleSubmit(handleSearch)} className="flex gap-3">
+        <input
+          type="number"
+          placeholder="Enter Task ID"
+          className="flex-1 rounded-xl border dark:bg-slate-900 dark:text-white border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          {...searchForm.register("id", {
+            required: true,
+            valueAsNumber: true,
+          })}
+        />
+        <Button type="submit" className="rounded-lg bg-indigo-600 hover:bg-indigo-700">
+          <Search className="mr-2 h-4 w-4" />
+          Load
+        </Button>
+      </form>
+    </CardContent>
+  </Card>
+
+  {/* Loading state */}
+  {isLoading && (
+    <div className="flex flex-col items-center justify-center gap-4 py-20">
+      <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
+      <p className="text-slate-500">Loading task details...</p>
+    </div>
+  )}
+
+  {/* Error state */}
+  {error instanceof Error && (
+    <div className="mx-auto max-w-2xl rounded-xl border border-red-200 bg-red-50 px-6 py-4 dark:border-red-900 dark:bg-red-950/40">
+      <p className="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
+        <XCircle className="h-4 w-4" />
+        {error.message}
+      </p>
+    </div>
+  )}
+
+  {/* Edit form */}
+  {task && !isLoading && !error && (
+    <Card className="mx-auto max-w-2xl rounded-2xl border border-border shadow-xl overflow-hidden">
+      {/* Gradient header banner */}
+      <div
+        className={`px-8 py-7 border-b border-border ${
+          task.completed
+            ? "bg-gradient-to-r from-emerald-50 via-emerald-50/40 to-transparent dark:from-emerald-950/40 dark:via-emerald-950/10"
+            : "bg-gradient-to-r from-orange-50 via-orange-50/40 to-transparent dark:from-orange-950/40 dark:via-orange-950/10"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+              Task #{task.id}
+            </p>
+            <CardTitle className="text-2xl font-bold text-foreground leading-tight">
+              Edit Task
+            </CardTitle>
+          </div>
+          <Badge
+            className={`shrink-0 gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border-0 ${
+              task.completed
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+                : "bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300"
+            }`}
           >
+            {task.completed ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            ) : (
+              <Circle className="h-3.5 w-3.5" />
+            )}
+            {task.completed ? "Completed" : "Pending"}
+          </Badge>
+        </div>
+      </div>
+
+      <CardContent className="p-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          {/* Title field */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Task Title</label>
             <input
-              type="number"
-              placeholder="Enter Task ID"
-              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
-              {...searchForm.register("id", {
-                required: true,
-                valueAsNumber: true,
-              })}
+              className="w-full rounded-xl border dark:bg-slate-900 dark:text-white border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Enter task title"
+              {...register("title", { required: true })}
             />
+          </div>
+
+          {/* AI Generate button */}
+          <div className="flex justify-end -mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 rounded-lg border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 dark:border-indigo-900 dark:hover:bg-indigo-950/40"
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending || !watch("title")}
+            >
+              {generateMutation.isPending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Generate Description
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Rich-text description */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Description</label>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-200 dark:border-slate-700 dark:bg-slate-900">
+              {/* Toolbar */}
+              <div className="flex items-center gap-1 border-b border-slate-200 px-2 py-1.5 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => editor?.chain().focus().toggleBold().run()}
+                  className={`rounded p-1.5 transition-colors ${
+                    editor?.isActive("bold")
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
+                      : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Bold className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor?.chain().focus().toggleItalic().run()}
+                  className={`rounded p-1.5 transition-colors ${
+                    editor?.isActive("italic")
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
+                      : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Italic className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+                  className={`rounded p-1.5 transition-colors ${
+                    editor?.isActive("heading", { level: 2 })
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300"
+                      : "text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800"
+                  }`}
+                >
+                  <Heading2 className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()}
+                  className="rounded p-1.5 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <Type className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Editor content */}
+              <Controller
+                name="description"
+                control={control}
+                render={() => <EditorContent editor={editor} />}
+              />
+            </div>
+          </div>
+
+          {/* Status toggle */}
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+            <div>
+              <h4 className="font-medium text-foreground">Status</h4>
+              <p className="text-sm text-muted-foreground">Mark this task as completed.</p>
+            </div>
+            <Checkbox
+              checked={watch("completed")}
+              onCheckedChange={(checked) => setValue("completed", checked === true)}
+              className="h-5 w-5 border-slate-300 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600"
+            />
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end gap-3 border-t border-border pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-lg border-slate-200"
+              onClick={() => navigate("/tasks")}
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
+              disabled={updateMutation.isPending}
               className="rounded-lg bg-indigo-600 hover:bg-indigo-700"
             >
-              <Search className="mr-2 h-4 w-4" />
-              Load
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Loading state */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center gap-4 py-20">
-          <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
-          <p className="text-slate-500">Loading task details...</p>
-        </div>
-      )}
-
-      {/* Error state */}
-      {error instanceof Error && (
-        <div className="flex justify-center py-10">
-          <p className="text-lg text-red-500">{error.message}</p>
-        </div>
-      )}
-
-      {/* Edit form */}
-      {task && !isLoading && !error && (
-        <Card className="mx-auto max-w-2xl rounded-2xl border-0 shadow-xl">
-          <CardHeader className="flex flex-row items-start justify-between">
-            <div className="space-y-1">
-              <CardTitle className="text-2xl font-bold text-slate-900">
-                Edit Task
-              </CardTitle>
-              <p className="text-sm text-slate-500">Task #{task.id}</p>
-            </div>
-            <Badge
-              className={
-                task.completed
-                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                  : "bg-orange-100 text-orange-700 hover:bg-orange-100"
-              }
-            >
-              {task.completed ? (
-                <CheckCircle2 className="mr-1 h-4 w-4" />
+              {updateMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
               ) : (
-                <Circle className="mr-1 h-4 w-4" />
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Update Task
+                </>
               )}
-              {task.completed ? "Completed" : "Pending"}
-            </Badge>
-          </CardHeader>
-
-          <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-              {/* Title field */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Task Title
-                </label>
-                <input
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 transition-all duration-200 placeholder:text-slate-400 focus:border-indigo-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200"
-                  placeholder="Enter task title"
-                  {...register("title", { required: true })}
-                />
-              </div>
-<div className="flex justify-end">
-  <Button
-    type="button"
-    variant="outline"
-    onClick={() => generateMutation.mutate()}
-    disabled={
-      generateMutation.isPending || !watch("title")
-    }
-  >
-    {generateMutation.isPending ? (
-      <>
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Generating...
-      </>
-    ) : (
-      "✨ Generate Description"
-    )}
-  </Button>
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )}
 </div>
-
-              {/* Rich‑text description */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Description
-                </label>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 transition-all focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-200">
-                  {/* Toolbar */}
-                  <div className="flex items-center gap-1 border-b border-slate-200 px-2 py-1.5">
-                    <button
-                      type="button"
-                      onClick={() => editor?.chain().focus().toggleBold().run()}
-                      className={`rounded p-1.5 ${editor?.isActive("bold") ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:bg-slate-200"}`}
-                    >
-                      <Bold className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => editor?.chain().focus().toggleItalic().run()}
-                      className={`rounded p-1.5 ${editor?.isActive("italic") ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:bg-slate-200"}`}
-                    >
-                      <Italic className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-                      className={`rounded p-1.5 ${editor?.isActive("heading", { level: 2 }) ? "bg-indigo-100 text-indigo-700" : "text-slate-500 hover:bg-slate-200"}`}
-                    >
-                      <Heading2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => editor?.chain().focus().clearNodes().unsetAllMarks().run()}
-                      className="rounded p-1.5 text-slate-500 hover:bg-slate-200"
-                    >
-                      <Type className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  {/* Editor content */}
-                  <Controller
-                    name="description"
-                    control={control}
-                    render={() => <EditorContent editor={editor} />}
-                  />
-                </div>
-              </div>
-
-              {/* Status toggle */}
-              <div className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4">
-                <div>
-                  <h4 className="font-medium text-slate-700">Status</h4>
-                  <p className="text-sm text-slate-500">
-                    Mark this task as completed.
-                  </p>
-                </div>
-                <Checkbox
-                  checked={watch("completed")}
-                  onCheckedChange={(checked) =>
-                    setValue("completed", checked === true)
-                  }
-                  className="h-5 w-5 border-slate-300 data-[state=checked]:border-emerald-600 data-[state=checked]:bg-emerald-600"
-                />
-              </div>
-
-              {/* Buttons */}
-              <div className="flex justify-end gap-3 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-lg border-slate-200"
-                  onClick={() => navigate("/tasks")}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="rounded-lg bg-indigo-600 hover:bg-indigo-700"
-                >
-                  {updateMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Update Task
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-    </div>
   )
 }

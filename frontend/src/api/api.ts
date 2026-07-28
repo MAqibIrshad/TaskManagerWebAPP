@@ -1,7 +1,7 @@
 import axios from "axios"
 
 const api = axios.create({
-  baseURL: "http://localhost:8000",
+  baseURL: "http://localhost:5000",
 })
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token")
@@ -55,7 +55,19 @@ export type LoginData = {
 
 export async function loginUser(data: LoginData) {
   const response = await api.post("/auth/login", data)
-  return response.data
+
+  const result = response.data
+
+  // Save token
+  localStorage.setItem("token", result.access_token)
+
+  // Save user (adjust according to your API response)
+  localStorage.setItem(
+    "user",
+    JSON.stringify(result.user)
+  )
+
+  return result
 }
 export async function reorderTasks(taskIds: number[]) {
   const response = await api.put("/tasks/reorder", {
