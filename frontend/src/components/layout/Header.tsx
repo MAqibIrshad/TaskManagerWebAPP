@@ -12,6 +12,7 @@ import {
 import { LogOut, Settings, User } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { useNavigate } from "react-router-dom"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 
 interface HeaderProps {
   categoryId?: number | null | undefined
@@ -69,20 +70,22 @@ export default function Header({
   }
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-indigo-100/80 bg-white/80 px-4 backdrop-blur-xl dark:border-indigo-900/40 dark:bg-slate-950/80 sm:h-20 sm:px-6">
-      {/* Left: category filter */}
-      <div className="flex min-w-0 items-center gap-6">
+    <header className="flex h-16 items-center justify-between gap-3 border-b border-indigo-100/80 bg-white/80 px-4 backdrop-blur-xl dark:border-indigo-900/40 dark:bg-slate-950/80 sm:h-20 sm:px-6">
+      {/* Left: mobile menu + optional category filter */}
+      <div className="flex min-w-0 items-center gap-3">
+        <SidebarTrigger className="rounded-lg text-slate-600 hover:bg-indigo-50 hover:text-indigo-700 dark:text-slate-300 dark:hover:bg-indigo-950/40 dark:hover:text-indigo-300 md:hidden" />
+
         {showCategoryFilter && onCategoryChange && (
           <div className="flex items-center gap-2">
             <label
               htmlFor="header-category-filter"
-              className="whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400"
+              className="hidden whitespace-nowrap text-sm font-medium text-slate-600 dark:text-slate-400 sm:inline"
             >
               Category
             </label>
             <select
               id="header-category-filter"
-              className="rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-indigo-900/50 dark:bg-slate-900 dark:text-slate-100"
+              className="max-w-[140px] rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-indigo-900/50 dark:bg-slate-900 dark:text-slate-100 sm:max-w-none"
               value={categoryId ?? "all"}
               onChange={(e) =>
                 onCategoryChange(

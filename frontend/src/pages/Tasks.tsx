@@ -85,11 +85,40 @@ export default function Tasks() {
       id: number
       completed: boolean
     }) => toggleTask(id, completed),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] })
-      toast.success("Task updated.")
+
+    onMutate: async ({ id, completed }) => {
+      await queryClient.cancelQueries({ queryKey: ["tasks"] })
+
+      const previous = queryClient.getQueriesData({ queryKey: ["tasks"] })
+
+      queryClient.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
+        if (!Array.isArray(old)) return old
+        return old.map((task: any) =>
+          task.id === id ? { ...task, completed } : task
+        )
+      })
+
+      return { previous }
     },
-    onError: () => toast.error("Failed to update task."),
+
+    onError: (_err, _vars, context) => {
+      context?.previous.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data)
+      })
+      toast.error("Failed to update task.")
+    },
+
+    onSuccess: (updatedTask, { id }) => {
+      // Targeted cache update from server response — no full list refetch
+      queryClient.setQueriesData({ queryKey: ["tasks"] }, (old: any) => {
+        if (!Array.isArray(old)) return old
+        return old.map((task: any) =>
+          task.id === id ? { ...task, ...updatedTask } : task
+        )
+      })
+      // Dashboard stats depend on completion — refresh those only
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+    },
   })
 
   // Loading skeleton
